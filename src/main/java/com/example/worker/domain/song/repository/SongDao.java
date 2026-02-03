@@ -4,9 +4,6 @@ import com.example.worker.domain.song.dto.SongDto;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
-import java.util.List;
-
 @Repository
 public class SongDao {
 

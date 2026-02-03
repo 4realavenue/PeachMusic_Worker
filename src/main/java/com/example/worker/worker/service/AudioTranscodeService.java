@@ -4,6 +4,7 @@ import com.example.worker.common.dto.response.TranscodeResultDto;
 import com.example.worker.common.enums.JobStatus;
 import com.example.worker.domain.song.repository.SongDao;
 import com.example.worker.domain.streamingjob.repository.StreamingJobDao;
+import com.example.worker.worker.AudioTranscoder;
 import com.example.worker.worker.dto.RetryRequestDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

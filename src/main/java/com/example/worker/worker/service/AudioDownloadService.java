@@ -4,6 +4,7 @@ import com.example.worker.common.enums.JobStatus;
 import com.example.worker.domain.song.dto.SongDto;
 import com.example.worker.domain.song.repository.SongDao;
 import com.example.worker.domain.streamingjob.repository.StreamingJobDao;
+import com.example.worker.worker.AudioDownloader;
 import com.example.worker.worker.dto.RetryRequestDto;
 import com.example.worker.worker.policy.FileNamePolicy;
 import lombok.RequiredArgsConstructor;

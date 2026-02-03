@@ -17,6 +17,10 @@ public class DownloadController {
 
     private final AudioDownloadService audioDownloadService;
 
+    /**
+     * API 서버에게 요청 받음
+     * 선택한 음원 다운로드 재시작 로직(수동)
+     */
     @PostMapping("/re-download")
     public void retryDownloadSong(
             @RequestBody RetryRequestDto requestDto

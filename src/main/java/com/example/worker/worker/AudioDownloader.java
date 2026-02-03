@@ -1,4 +1,4 @@
-package com.example.worker.worker.service;
+package com.example.worker.worker;
 
 import org.springframework.stereotype.Component;
 
@@ -11,6 +11,9 @@ import java.nio.file.StandardCopyOption;
 @Component
 public class AudioDownloader {
 
+    /**
+     * url -> mp3 음원 다운로드 로직
+     */
     public static Path downloadAudio(String audioUrl, Path savePath) {
         try (InputStream inputStream = new URL(audioUrl).openStream()) {
             Files.createDirectories(savePath.getParent());

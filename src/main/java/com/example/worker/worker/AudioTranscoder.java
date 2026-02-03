@@ -1,10 +1,9 @@
-package com.example.worker.worker.service;
+package com.example.worker.worker;
 
 import com.example.worker.common.dto.response.TranscodeResultDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -24,6 +23,9 @@ public class AudioTranscoder {
     @Value("${worker.media.streaming-audio-path}")
     private String streamingAudioPath;
 
+    /**
+     * 형 변환 로직
+     */
     public TranscodeResultDto transcodeAudio(String audioPath) {
         try {
             Path input = resolveInputFile(audioPath);
@@ -95,6 +97,9 @@ public class AudioTranscoder {
         }
     }
 
+    /**
+     * 경로 통일화를 위한 로직
+     */
     private Path resolveInputFile(String audioPath) {
         if (audioPath == null || audioPath.isBlank()) {
             throw new IllegalArgumentException("audioPath가 비어있습니다.");

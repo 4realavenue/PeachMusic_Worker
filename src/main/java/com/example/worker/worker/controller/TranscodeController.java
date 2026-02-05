@@ -1,6 +1,6 @@
 package com.example.worker.worker.controller;
 
-import com.example.worker.worker.dto.RetryRequestDto;
+import com.example.worker.worker.dto.request.WorkerTryWorkRequestDto;
 import com.example.worker.worker.service.AudioTranscodeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,14 +17,12 @@ public class TranscodeController {
 
     /**
      * API 서버에게 요청 받음
-     * 선택한 음원 형 변환 재시작 로직(수동)
+     * 선택한 음원 형 변환 로직(수동)
      */
-    @PostMapping("/re-transcode")
-    public void retryTranscodeSong(
-            @RequestBody RetryRequestDto requestDto
-            ) {
-        audioTranscodeService.retryTranscodeSong(requestDto);
+    @PostMapping("/songs/transcode")
+    public void tryTranscodeSong(
+            @RequestBody WorkerTryWorkRequestDto requestDto
+    ) {
+        audioTranscodeService.tryTranscodeSong(requestDto);
     }
-
-
 }

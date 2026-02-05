@@ -1,11 +1,11 @@
 package com.example.worker.worker.service;
 
-import com.example.worker.common.dto.response.TranscodeResultDto;
+import com.example.worker.worker.dto.TranscodeResultDto;
 import com.example.worker.common.enums.JobStatus;
 import com.example.worker.domain.song.repository.SongDao;
 import com.example.worker.domain.streamingjob.repository.StreamingJobDao;
-import com.example.worker.worker.AudioTranscoder;
-import com.example.worker.worker.dto.RetryRequestDto;
+import com.example.worker.worker.worker.AudioTranscoder;
+import com.example.worker.worker.dto.request.WorkerTryWorkRequestDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -21,12 +21,16 @@ public class AudioTranscodeService {
     private final SongDao songDao;
     private final StreamingJobDao streamingJobDao;
 
-    public void retryTranscodeSong(RetryRequestDto requestDto) {
+    // 음원 형변환 시도 (관리자 수동)
+    public void tryTranscodeSong(WorkerTryWorkRequestDto requestDto) {
 
         List<Long> songIdList = requestDto.getSongIdList();
 
         for (Long songId : songIdList) {
-            if (!streamingJobDao.claimStatus(songId, JobStatus.TRANSCODE_FAILED, JobStatus.TRANSCODING)) continue;
+
+            boolean claimed = streamingJobDao.claimStatus(songId, JobStatus.READY, JobStatus.TRANSCODING) || streamingJobDao.claimStatus(songId, JobStatus.TRANSCODE_FAILED, JobStatus.TRANSCODING);
+
+            if (!claimed) continue;
 
             try {
                 TranscodeResultDto transcodeResult = audioTranscoder.transcodeAudio(songDao.loadMetaData(songId).audio());
@@ -36,6 +40,7 @@ public class AudioTranscodeService {
                 streamingJobDao.updateStatus(songId, JobStatus.SUCCESS);
 
                 songDao.updateStatus(songId, true);
+
             } catch (Exception exception) {
                 streamingJobDao.updateStatus(songId, JobStatus.TRANSCODE_FAILED);
                 log.error("SongId : {}, Transcode Failed : {}", songId, exception.getMessage());

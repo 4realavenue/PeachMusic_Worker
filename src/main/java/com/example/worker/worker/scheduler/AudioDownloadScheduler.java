@@ -1,11 +1,11 @@
 package com.example.worker.worker.scheduler;
 
-import com.example.worker.worker.policy.FileNamePolicy;
-import com.example.worker.domain.song.dto.SongDto;
 import com.example.worker.common.enums.JobStatus;
+import com.example.worker.domain.song.dto.SongDto;
+import com.example.worker.domain.song.policy.SongFileNamePolicy;
 import com.example.worker.domain.song.repository.SongDao;
 import com.example.worker.domain.streamingjob.repository.StreamingJobDao;
-import com.example.worker.worker.AudioDownloader;
+import com.example.worker.worker.worker.AudioDownloader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -35,9 +35,12 @@ public class AudioDownloadScheduler {
             try {
                 SongDto songMetaData = songDao.loadMetaData(songId);
 
-                String fileName = FileNamePolicy.mp3FileNamePolicy(songMetaData);
+                String fileName = SongFileNamePolicy.mp3FileNamePolicy(songMetaData);
 
+                // todo 스토리지에 환경에 맞춰 변경 예정
                 Path savePath = Path.of("uploads/audios/" + fileName);
+
+                AudioDownloader.downloadAudio(songMetaData.audio(), savePath);
 
                 String path = savePath.toString().replace("\\", "/");
 
@@ -45,18 +48,17 @@ public class AudioDownloadScheduler {
 
                 streamingJobDao.updateStatus(songId, JobStatus.READY);
 
-                AudioDownloader.downloadAudio(songMetaData.audio(), savePath);
-
             } catch (Exception exception) {
                 streamingJobDao.updateStatus(songId, JobStatus.DOWNLOAD_FAILED);
-                log.error("SongId : {}, Download Failed : {}",songId, exception.getMessage());
+
+                log.error("SongId : {}, Download Failed : {}", songId, exception.getMessage());
             }
         }
     }
 
     // 매일 06시에 url -> mp3 다운로드 재시도
     @Scheduled(cron = "0 0 6 * * ?")
-    public void reDownloadAudio() {
+    public void retryDownloadAudio() {
 
         List<Long> songIdList = streamingJobDao.findSongIdListByJobStatus(JobStatus.DOWNLOAD_FAILED, 300);
 
@@ -66,9 +68,12 @@ public class AudioDownloadScheduler {
             try {
                 SongDto songMetaData = songDao.loadMetaData(songId);
 
-                String fileName = FileNamePolicy.mp3FileNamePolicy(songMetaData);
+                String fileName = SongFileNamePolicy.mp3FileNamePolicy(songMetaData);
 
+                // todo 스토리지에 환경에 맞춰 변경 예정
                 Path savePath = Path.of("uploads/audios/" + fileName);
+
+                AudioDownloader.downloadAudio(songMetaData.audio(), savePath);
 
                 String path = savePath.toString().replace("\\", "/");
 
@@ -76,10 +81,9 @@ public class AudioDownloadScheduler {
 
                 streamingJobDao.updateStatus(songId, JobStatus.READY);
 
-                AudioDownloader.downloadAudio(songMetaData.audio(), savePath);
-
             } catch (Exception exception) {
                 streamingJobDao.updateStatus(songId, JobStatus.DOWNLOAD_FAILED);
+
                 log.error("SongId : {}, Download Failed : {}", songId, exception.getMessage());
             }
         }
@@ -88,12 +92,12 @@ public class AudioDownloadScheduler {
     // 매일 01시에 DOWNLOADING으로 상태가 멈춰 있으면 작업 가능 상태로 복구
     @Scheduled(cron = "0 0 1 * * ?")
 //        @Scheduled(fixedDelay = 50000)
-    public void StatusDownloadingToNotReady() {
+    public void updateStatusDownloadingToNotReady() {
 
         List<Long> songIdList = streamingJobDao.findSongIdListByJobStatus(JobStatus.DOWNLOADING, 100);
 
         for (Long songId : songIdList) {
-                streamingJobDao.updateStatus(songId, JobStatus.NOT_READY);
+            streamingJobDao.updateStatus(songId, JobStatus.NOT_READY);
         }
     }
 }

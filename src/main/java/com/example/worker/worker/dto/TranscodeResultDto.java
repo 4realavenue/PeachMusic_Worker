@@ -1,4 +1,4 @@
-package com.example.worker.common.dto.response;
+package com.example.worker.worker.dto;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class TranscodeResultDto {
 
+    // .m3u8
     public final String playlistPath;
+    // 저장 경로
     public final String outputDir;
 }

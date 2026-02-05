@@ -2,11 +2,11 @@ package com.example.worker.worker.service;
 
 import com.example.worker.common.enums.JobStatus;
 import com.example.worker.domain.song.dto.SongDto;
+import com.example.worker.domain.song.policy.SongFileNamePolicy;
 import com.example.worker.domain.song.repository.SongDao;
 import com.example.worker.domain.streamingjob.repository.StreamingJobDao;
-import com.example.worker.worker.AudioDownloader;
-import com.example.worker.worker.dto.RetryRequestDto;
-import com.example.worker.worker.policy.FileNamePolicy;
+import com.example.worker.worker.worker.AudioDownloader;
+import com.example.worker.worker.dto.request.WorkerTryWorkRequestDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -21,17 +21,22 @@ public class AudioDownloadService {
     private final SongDao songDao;
     private final StreamingJobDao streamingJobDao;
 
-    public void retryDownloadSong(RetryRequestDto requestDto) {
+    // 음원 다운로드 시도 (관리자 수동)
+    public void tryDownloadSong(WorkerTryWorkRequestDto requestDto) {
 
         for (Long songId : requestDto.getSongIdList()) {
-            if (!streamingJobDao.claimStatus(songId, JobStatus.DOWNLOAD_FAILED, JobStatus.DOWNLOADING)) continue;
+            boolean claimed = streamingJobDao.claimStatus(songId, JobStatus.NOT_READY, JobStatus.DOWNLOADING) || streamingJobDao.claimStatus(songId, JobStatus.DOWNLOAD_FAILED, JobStatus.DOWNLOADING);
+
+            if (!claimed) continue;
 
             try {
                 SongDto songMetaData = songDao.loadMetaData(songId);
 
-                String fileName = FileNamePolicy.mp3FileNamePolicy(songMetaData);
+                String fileName = SongFileNamePolicy.mp3FileNamePolicy(songMetaData);
 
                 Path savePath = Path.of("uploads/audios/" + fileName);
+
+                AudioDownloader.downloadAudio(songMetaData.audio(), savePath);
 
                 String path = savePath.toString().replace("\\", "/");
 
@@ -39,12 +44,11 @@ public class AudioDownloadService {
 
                 streamingJobDao.updateStatus(songId, JobStatus.READY);
 
-                AudioDownloader.downloadAudio(songMetaData.audio(), savePath);
             } catch (Exception exception) {
                 streamingJobDao.updateStatus(songId, JobStatus.DOWNLOAD_FAILED);
+
                 log.error("SongId : {}, Download Failed : {}", songId, exception.getMessage());
             }
-
         }
     }
 }

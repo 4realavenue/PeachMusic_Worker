@@ -1,4 +1,4 @@
-package com.example.worker.worker;
+package com.example.worker.worker.worker;
 
 import org.springframework.stereotype.Component;
 

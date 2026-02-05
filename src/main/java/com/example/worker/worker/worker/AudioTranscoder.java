@@ -1,6 +1,6 @@
-package com.example.worker.worker;
+package com.example.worker.worker.worker;
 
-import com.example.worker.common.dto.response.TranscodeResultDto;
+import com.example.worker.worker.dto.TranscodeResultDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;

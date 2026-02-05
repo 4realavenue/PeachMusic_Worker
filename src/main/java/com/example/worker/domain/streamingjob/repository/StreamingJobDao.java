@@ -22,7 +22,7 @@ public class StreamingJobDao {
                     FROM streaming_jobs
                     WHERE job_status = ?
                     ORDER BY song_id
-                        LIMIT ?
+                    LIMIT ?
                 """, Long.class, jobStatus.name(), limit);
     }
 
@@ -32,7 +32,7 @@ public class StreamingJobDao {
                     UPDATE streaming_jobs
                     SET job_status = ?
                     WHERE song_id = ?
-                        AND job_status = ?
+                    AND job_status = ?
                 """, to.name(), songId, from.name());
 
         return updated == 1; // true면 내가 가져간 거

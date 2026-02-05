@@ -1,4 +1,4 @@
-package com.example.worker.common.dto.response;
+package com.example.worker.worker.dto;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

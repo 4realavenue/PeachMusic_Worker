@@ -1,15 +1,13 @@
 package com.example.worker.worker.controller;
 
-import com.example.worker.worker.dto.WorkerRetryWorkRequestDto;
+import com.example.worker.worker.dto.request.WorkerTryWorkRequestDto;
 import com.example.worker.worker.service.AudioDownloadService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Slf4j
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/worker")
@@ -19,11 +17,11 @@ public class DownloadController {
 
     /**
      * API 서버에게 요청 받음
-     * 선택한 음원 다운로드 재시작 로직(수동)
+     * 선택한 음원 다운로드 로직(수동)
      */
-    @PostMapping("/re-download")
-    public void retryDownloadSong(
-            @RequestBody WorkerRetryWorkRequestDto requestDto
+    @PostMapping("/songs/download")
+    public void tryDownloadSong(
+            @RequestBody WorkerTryWorkRequestDto requestDto
     ) {
         audioDownloadService.tryDownloadSong(requestDto);
     }

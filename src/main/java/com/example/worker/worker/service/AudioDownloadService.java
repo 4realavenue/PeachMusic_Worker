@@ -5,8 +5,8 @@ import com.example.worker.domain.song.dto.SongDto;
 import com.example.worker.domain.song.policy.SongFileNamePolicy;
 import com.example.worker.domain.song.repository.SongDao;
 import com.example.worker.domain.streamingjob.repository.StreamingJobDao;
-import com.example.worker.worker.AudioDownloader;
-import com.example.worker.worker.dto.WorkerRetryWorkRequestDto;
+import com.example.worker.worker.worker.AudioDownloader;
+import com.example.worker.worker.dto.request.WorkerTryWorkRequestDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -22,7 +22,7 @@ public class AudioDownloadService {
     private final StreamingJobDao streamingJobDao;
 
     // 음원 다운로드 시도 (관리자 수동)
-    public void tryDownloadSong(WorkerRetryWorkRequestDto requestDto) {
+    public void tryDownloadSong(WorkerTryWorkRequestDto requestDto) {
 
         for (Long songId : requestDto.getSongIdList()) {
             boolean claimed = streamingJobDao.claimStatus(songId, JobStatus.NOT_READY, JobStatus.DOWNLOADING) || streamingJobDao.claimStatus(songId, JobStatus.DOWNLOAD_FAILED, JobStatus.DOWNLOADING);

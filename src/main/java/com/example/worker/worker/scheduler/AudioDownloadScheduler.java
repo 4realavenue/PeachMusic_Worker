@@ -5,7 +5,7 @@ import com.example.worker.domain.song.dto.SongDto;
 import com.example.worker.domain.song.policy.SongFileNamePolicy;
 import com.example.worker.domain.song.repository.SongDao;
 import com.example.worker.domain.streamingjob.repository.StreamingJobDao;
-import com.example.worker.worker.AudioDownloader;
+import com.example.worker.worker.worker.AudioDownloader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;

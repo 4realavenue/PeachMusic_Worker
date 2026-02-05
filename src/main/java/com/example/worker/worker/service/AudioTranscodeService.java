@@ -1,11 +1,11 @@
 package com.example.worker.worker.service;
 
-import com.example.worker.common.dto.response.TranscodeResultDto;
+import com.example.worker.worker.dto.TranscodeResultDto;
 import com.example.worker.common.enums.JobStatus;
 import com.example.worker.domain.song.repository.SongDao;
 import com.example.worker.domain.streamingjob.repository.StreamingJobDao;
-import com.example.worker.worker.AudioTranscoder;
-import com.example.worker.worker.dto.WorkerRetryWorkRequestDto;
+import com.example.worker.worker.worker.AudioTranscoder;
+import com.example.worker.worker.dto.request.WorkerTryWorkRequestDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -22,7 +22,7 @@ public class AudioTranscodeService {
     private final StreamingJobDao streamingJobDao;
 
     // 음원 형변환 시도 (관리자 수동)
-    public void tryTranscodeSong(WorkerRetryWorkRequestDto requestDto) {
+    public void tryTranscodeSong(WorkerTryWorkRequestDto requestDto) {
 
         List<Long> songIdList = requestDto.getSongIdList();
 

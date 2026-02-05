@@ -7,7 +7,7 @@ import java.util.List;
 
 @Getter
 @NoArgsConstructor
-public class RetryRequestDto {
+public class WorkerRetryWorkRequestDto {
 
     List<Long> songIdList;
 }

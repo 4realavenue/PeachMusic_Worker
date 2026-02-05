@@ -1,6 +1,6 @@
 package com.example.worker.worker.controller;
 
-import com.example.worker.worker.dto.RetryRequestDto;
+import com.example.worker.worker.dto.WorkerRetryWorkRequestDto;
 import com.example.worker.worker.service.AudioDownloadService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,8 +23,8 @@ public class DownloadController {
      */
     @PostMapping("/re-download")
     public void retryDownloadSong(
-            @RequestBody RetryRequestDto requestDto
-            ) {
-        audioDownloadService.retryDownloadSong(requestDto);
+            @RequestBody WorkerRetryWorkRequestDto requestDto
+    ) {
+        audioDownloadService.tryDownloadSong(requestDto);
     }
 }

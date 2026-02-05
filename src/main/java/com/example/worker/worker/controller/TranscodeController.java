@@ -1,6 +1,6 @@
 package com.example.worker.worker.controller;
 
-import com.example.worker.worker.dto.RetryRequestDto;
+import com.example.worker.worker.dto.WorkerRetryWorkRequestDto;
 import com.example.worker.worker.service.AudioTranscodeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -21,10 +21,8 @@ public class TranscodeController {
      */
     @PostMapping("/re-transcode")
     public void retryTranscodeSong(
-            @RequestBody RetryRequestDto requestDto
-            ) {
-        audioTranscodeService.retryTranscodeSong(requestDto);
+            @RequestBody WorkerRetryWorkRequestDto requestDto
+    ) {
+        audioTranscodeService.tryTranscodeSong(requestDto);
     }
-
-
 }

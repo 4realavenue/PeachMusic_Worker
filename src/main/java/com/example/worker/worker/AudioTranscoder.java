@@ -27,6 +27,7 @@ public class AudioTranscoder {
      * 형 변환 로직
      */
     public TranscodeResultDto transcodeAudio(String audioPath) {
+
         try {
             Path input = resolveInputFile(audioPath);
 
@@ -41,7 +42,7 @@ public class AudioTranscoder {
 
             Path streamingAudio = outputPath.resolve(audioFileName + ".m3u8");
 
-            Path outputSegment = outputPath.resolve(audioFileName + "_%04d.ts");
+            Path streamingSegment = outputPath.resolve(audioFileName + "_%04d.ts");
 
             List<String> cmd = List.of(
                     "ffmpeg", "-y", "-i", input.toString(), "-vn",
@@ -53,7 +54,7 @@ public class AudioTranscoder {
                     "-hls_time", "6",
                     "-hls_playlist_type", "vod",
                     "-hls_flags", "independent_segments",
-                    "-hls_segment_filename", outputSegment.toString(), streamingAudio.toString()
+                    "-hls_segment_filename", streamingSegment.toString(), streamingAudio.toString()
             );
 
             ProcessBuilder processBuilder = new ProcessBuilder(cmd);
@@ -92,8 +93,8 @@ public class AudioTranscoder {
 
             return new TranscodeResultDto(streamingAudio.toString(), outputPath.toString());
 
-        } catch (Exception e) {
-            throw new RuntimeException("HLS 변환 실패 : " + e.getMessage());
+        } catch (Exception exception) {
+            throw new RuntimeException("HLS 변환 실패 : " + exception.getMessage());
         }
     }
 
@@ -101,6 +102,7 @@ public class AudioTranscoder {
      * 경로 통일화를 위한 로직
      */
     private Path resolveInputFile(String audioPath) {
+
         if (audioPath == null || audioPath.isBlank()) {
             throw new IllegalArgumentException("audioPath가 비어있습니다.");
         }
@@ -117,5 +119,4 @@ public class AudioTranscoder {
 
         return Path.of(this.audioPath, fileName);
     }
-
 }

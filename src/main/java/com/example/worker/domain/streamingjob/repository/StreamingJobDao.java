@@ -18,11 +18,11 @@ public class StreamingJobDao {
     // 작업 상태로 songId를 List로 받아오기
     public List<Long> findSongIdListByJobStatus(JobStatus jobStatus, int limit) {
         return jdbcTemplate.queryForList("""
-                SELECT song_id 
-                FROM streaming_jobs
-                WHERE job_status = ?
-                ORDER BY song_id
-                LIMIT ?
+                    SELECT song_id 
+                    FROM streaming_jobs
+                    WHERE job_status = ?
+                    ORDER BY song_id
+                        LIMIT ?
                 """, Long.class, jobStatus.name(), limit);
     }
 
@@ -32,13 +32,13 @@ public class StreamingJobDao {
                     UPDATE streaming_jobs
                     SET job_status = ?
                     WHERE song_id = ?
-                      AND job_status = ?
+                        AND job_status = ?
                 """, to.name(), songId, from.name());
 
         return updated == 1; // true면 내가 가져간 거
     }
 
-    // 작업 상태 변경 (후 설정)
+    // 작업 상태 변경
     public void updateStatus(Long songId, JobStatus status) {
         jdbcTemplate.update("""
                     UPDATE streaming_jobs

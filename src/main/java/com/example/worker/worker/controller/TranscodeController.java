@@ -19,7 +19,7 @@ public class TranscodeController {
      * API 서버에게 요청 받음
      * 선택한 음원 형 변환 로직(수동)
      */
-    @PostMapping("/songs/transcode")
+    @PostMapping("/songs/transcode-request")
     public void tryTranscodeSong(
             @RequestBody WorkerTryWorkRequestDto requestDto
     ) {

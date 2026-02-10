@@ -1,50 +1,72 @@
 package com.example.worker.worker.service;
 
+import com.example.worker.common.enums.ProgressingStatus;
+import com.example.worker.domain.song.entity.Song;
+import com.example.worker.domain.song.repository.SongRepository;
+import com.example.worker.domain.songprogressingstatus.entity.SongProgressingStatus;
+import com.example.worker.domain.songprogressingstatus.repository.SongProgressingStatusRepository;
 import com.example.worker.worker.dto.TranscodeResultDto;
-import com.example.worker.common.enums.JobStatus;
-import com.example.worker.domain.song.repository.SongDao;
-import com.example.worker.domain.streamingjob.repository.StreamingJobDao;
-import com.example.worker.worker.worker.AudioTranscoder;
 import com.example.worker.worker.dto.request.WorkerTryWorkRequestDto;
+import com.example.worker.worker.worker.AudioTranscoder;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AudioTranscodeService {
 
     private final AudioTranscoder audioTranscoder;
-    private final SongDao songDao;
-    private final StreamingJobDao streamingJobDao;
+    private final SongRepository songRepository;
+    private final SongProgressingStatusRepository songProgressingStatusRepository;
+
+    private final Logger transcodeLog = LoggerFactory.getLogger("WORKER_TRANSCODE");
 
     // 음원 형변환 시도 (관리자 수동)
+    @Transactional
     public void tryTranscodeSong(WorkerTryWorkRequestDto requestDto) {
 
-        List<Long> songIdList = requestDto.getSongIdList();
+        List<ProgressingStatus> allowed = List.of(ProgressingStatus.READY, ProgressingStatus.TRANSCODE_FAILED);
 
-        for (Long songId : songIdList) {
+        for (Long songId : requestDto.getSongIdList()) {
 
-            boolean claimed = streamingJobDao.claimStatus(songId, JobStatus.READY, JobStatus.TRANSCODING) || streamingJobDao.claimStatus(songId, JobStatus.TRANSCODE_FAILED, JobStatus.TRANSCODING);
+            int claimedTranscode = songProgressingStatusRepository.readyToAbleWork(songId, allowed, ProgressingStatus.TRANSCODING);
 
-            if (!claimed) continue;
+            if (claimedTranscode == 0) {
+                continue;
+            }
 
             try {
-                TranscodeResultDto transcodeResult = audioTranscoder.transcodeAudio(songDao.loadMetaData(songId).audio());
-
-                songDao.updateAudioPath(songId, transcodeResult.getPlaylistPath());
-
-                streamingJobDao.updateStatus(songId, JobStatus.SUCCESS);
-
-                songDao.updateStatus(songId, true);
-
+                transcodeSong(songId);
             } catch (Exception exception) {
-                streamingJobDao.updateStatus(songId, JobStatus.TRANSCODE_FAILED);
-                log.error("SongId : {}, Transcode Failed : {}", songId, exception.getMessage());
+                songProgressingStatusRepository.updateStatusBySongId(songId, ProgressingStatus.TRANSCODE_FAILED);
+
+                transcodeLog.error("SongId : {}, Transcode Failed : {}", songId, exception.getMessage());
             }
         }
+    }
+
+    // 음원 형변환 수행
+    @Transactional
+    public void transcodeSong(Long songId) {
+
+        Song findSong = songRepository.findSongBySongId(songId)
+                .orElseThrow(() -> new RuntimeException("존재하지 않는 음원입니다"));
+
+        SongProgressingStatus findSongProgressingStatus = songProgressingStatusRepository.findSongProgressingStatusBySong_SongId(songId)
+                .orElseThrow(() -> new RuntimeException("존재하지 않는 데이터입니다"));
+
+        TranscodeResultDto transcodeResult = audioTranscoder.transcodeAudio(findSong.getAudio());
+
+        findSong.updateAudio(transcodeResult.getPlaylistPath());
+
+        findSongProgressingStatus.updateStatus(ProgressingStatus.SUCCESS);
+
+        findSong.updateStatus(true);
+
     }
 }

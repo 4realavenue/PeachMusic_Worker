@@ -1,47 +1,48 @@
 package com.example.worker.worker.scheduler;
 
-import com.example.worker.worker.dto.TranscodeResultDto;
-import com.example.worker.common.enums.JobStatus;
-import com.example.worker.domain.song.repository.SongDao;
-import com.example.worker.domain.streamingjob.repository.StreamingJobDao;
-import com.example.worker.worker.worker.AudioTranscoder;
+import com.example.worker.common.enums.ProgressingStatus;
+import com.example.worker.domain.songprogressingstatus.entity.SongProgressingStatus;
+import com.example.worker.domain.songprogressingstatus.repository.SongProgressingStatusRepository;
+import com.example.worker.worker.service.AudioTranscodeService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
+//@ConditionalOnProperty(name="worker.bootstrap.enabled", havingValue="true")
 public class AudioTranscoderScheduler {
 
-    private final SongDao songDao;
-    private final StreamingJobDao streamingJobDao;
-    private final AudioTranscoder audioTranscoder;
+    private final AudioTranscodeService audioTranscodeService;
+    private final SongProgressingStatusRepository songProgressingStatusRepository;
+
+    private final Logger transcodeLog = LoggerFactory.getLogger("WORKER_TRANSCODE");
 
     // 매일 05시에 mp3 -> m3u8, ts 형변환 진행
     @Scheduled(cron = "0 0 5 * * ?")
     public void transcodeAudio() {
 
-        List<Long> songIdList = streamingJobDao.findSongIdListByJobStatus(JobStatus.READY, 300);
+        List<Long> songIdList = songProgressingStatusRepository.findSongIdListByProgressingStatus(ProgressingStatus.READY, PageRequest.of(0, 200));
 
         for (Long songId : songIdList) {
-            if (!streamingJobDao.claimStatus(songId, JobStatus.READY, JobStatus.TRANSCODING)) continue;
+
+            int claimedTranscode = songProgressingStatusRepository.claimStatusBySongId(songId, ProgressingStatus.READY, ProgressingStatus.TRANSCODING);
+
+            if (claimedTranscode == 0) {
+                continue;
+            }
 
             try {
-                TranscodeResultDto transcodeResult = audioTranscoder.transcodeAudio(songDao.loadMetaData(songId).audio());
-
-                songDao.updateAudioPath(songId, transcodeResult.getPlaylistPath());
-
-                streamingJobDao.updateStatus(songId, JobStatus.SUCCESS);
-
-                songDao.updateStatus(songId, true);
-
+                audioTranscodeService.transcodeSong(songId);
             } catch (Exception exception) {
-                streamingJobDao.updateStatus(songId, JobStatus.TRANSCODE_FAILED);
-                log.error("SongId : {}, Transcode Failed : {}", songId, exception.getMessage());
+                songProgressingStatusRepository.updateStatusBySongId(songId, ProgressingStatus.TRANSCODE_FAILED);
+
+                transcodeLog.error("SongId : {}, Transcode Failed : {}", songId, exception.getMessage());
             }
         }
     }
@@ -50,23 +51,22 @@ public class AudioTranscoderScheduler {
     @Scheduled(cron = "0 0 7  * * ?")
     public void retryTranscodeAudio() {
 
-        List<Long> songIdList = streamingJobDao.findSongIdListByJobStatus(JobStatus.TRANSCODE_FAILED, 300);
+        List<Long> songIdList = songProgressingStatusRepository.findSongIdListByProgressingStatus(ProgressingStatus.TRANSCODE_FAILED, PageRequest.of(0, 200));
 
         for (Long songId : songIdList) {
-            if (!streamingJobDao.claimStatus(songId, JobStatus.TRANSCODE_FAILED, JobStatus.TRANSCODING)) continue;
+
+            int claimedTranscode = songProgressingStatusRepository.claimStatusBySongId(songId, ProgressingStatus.TRANSCODE_FAILED, ProgressingStatus.TRANSCODING);
+
+            if (claimedTranscode == 0) {
+                continue;
+            }
 
             try {
-                TranscodeResultDto transcodeResult = audioTranscoder.transcodeAudio(songDao.loadMetaData(songId).audio());
-
-                songDao.updateAudioPath(songId, transcodeResult.getPlaylistPath());
-
-                streamingJobDao.updateStatus(songId, JobStatus.SUCCESS);
-
-                songDao.updateStatus(songId, true);
-
+                audioTranscodeService.transcodeSong(songId);
             } catch (Exception exception) {
-                streamingJobDao.updateStatus(songId, JobStatus.TRANSCODE_FAILED);
-                log.error("SongId : {}, Transcode Failed : {}", songId, exception.getMessage());
+                songProgressingStatusRepository.updateStatusBySongId(songId, ProgressingStatus.TRANSCODE_FAILED);
+
+                transcodeLog.error("SongId : {}, Transcode Failed : {}", songId, exception.getMessage());
             }
         }
     }
@@ -76,10 +76,10 @@ public class AudioTranscoderScheduler {
 //    @Scheduled(fixedDelay = 50000)
     public void updateStatusTranscodingToReady() {
 
-        List<Long> songIdList = streamingJobDao.findSongIdListByJobStatus(JobStatus.TRANSCODING, 100);
+        List<SongProgressingStatus> songProgressingStatusList = songProgressingStatusRepository.findSongProgressingStatusByProgressingStatus(ProgressingStatus.TRANSCODING, PageRequest.of(0, 100));
 
-        for (Long songId : songIdList) {
-            streamingJobDao.updateStatus(songId, JobStatus.READY);
+        for (SongProgressingStatus songProgressingStatus : songProgressingStatusList) {
+            songProgressingStatus.updateStatus(ProgressingStatus.READY);
         }
     }
 }

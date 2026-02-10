@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-public enum JobStatus {
+public enum ProgressingStatus {
 
     // url만 있는 상태
     NOT_READY,

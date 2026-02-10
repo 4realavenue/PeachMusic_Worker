@@ -19,7 +19,7 @@ public class DownloadController {
      * API 서버에게 요청 받음
      * 선택한 음원 다운로드 로직(수동)
      */
-    @PostMapping("/songs/download")
+    @PostMapping("/songs/download-request")
     public void tryDownloadSong(
             @RequestBody WorkerTryWorkRequestDto requestDto
     ) {

@@ -1,16 +1,20 @@
 package com.example.worker.domain.song.policy;
 
-import com.example.worker.domain.song.dto.SongDto;
+import com.example.worker.domain.song.entity.Song;
 
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 public class SongFileNamePolicy {
 
     // 음원 파일 명명 규칙
-    public static String mp3FileNamePolicy(SongDto metaData) {
-        String date = metaData.createdAt().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+    public static String mp3FileNamePolicy(Song song) {
 
-        String title = sanitize(metaData.title());
+        LocalDateTime createdAt = song.getCreatedAt() != null ? song.getCreatedAt() : LocalDateTime.now();
+
+        String date = createdAt.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+
+        String title = sanitize(song.getName());
 
         return "peachmusic_song_" + title + "_" + date + ".mp3";
     }

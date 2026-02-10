@@ -1,57 +1,50 @@
 package com.example.worker.worker.scheduler;
 
-import com.example.worker.common.enums.JobStatus;
-import com.example.worker.domain.song.dto.SongDto;
-import com.example.worker.domain.song.policy.SongFileNamePolicy;
-import com.example.worker.domain.song.repository.SongDao;
-import com.example.worker.domain.streamingjob.repository.StreamingJobDao;
-import com.example.worker.worker.worker.AudioDownloader;
+import com.example.worker.common.enums.ProgressingStatus;
+import com.example.worker.domain.songprogressingstatus.entity.SongProgressingStatus;
+import com.example.worker.domain.songprogressingstatus.repository.SongProgressingStatusRepository;
+import com.example.worker.worker.service.AudioDownloadService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.nio.file.Path;
 import java.util.List;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
+//@ConditionalOnProperty(name="worker.bootstrap.enabled", havingValue="true")
 public class AudioDownloadScheduler {
 
-    private final SongDao songDao;
-    private final StreamingJobDao streamingJobDao;
+    private final SongProgressingStatusRepository songProgressingStatusRepository;
+    private final AudioDownloadService audioDownloadService;
+
+    private final static Logger downloadLog = LoggerFactory.getLogger("WORKER_DOWNLOAD");
 
     // 매일 04시에 url -> mp3 다운로드 진행
     @Scheduled(cron = "0 0 4 * * ?")
 //    @Scheduled(fixedDelay = 50000)
     public void downloadAudio() {
 
-        List<Long> songIdList = streamingJobDao.findSongIdListByJobStatus(JobStatus.NOT_READY, 300);
+        List<Long> songIdList = songProgressingStatusRepository.findSongIdListByProgressingStatus(ProgressingStatus.NOT_READY, PageRequest.of(0, 200));
 
         for (Long songId : songIdList) {
-            if (!streamingJobDao.claimStatus(songId, JobStatus.NOT_READY, JobStatus.DOWNLOADING)) continue;
+
+            int claimedDownload = songProgressingStatusRepository.claimStatusBySongId(songId, ProgressingStatus.NOT_READY, ProgressingStatus.DOWNLOADING);
+
+            if (claimedDownload == 0) {
+                continue;
+            }
 
             try {
-                SongDto songMetaData = songDao.loadMetaData(songId);
-
-                String fileName = SongFileNamePolicy.mp3FileNamePolicy(songMetaData);
-
-                // todo 스토리지에 환경에 맞춰 변경 예정
-                Path savePath = Path.of("uploads/audios/" + fileName);
-
-                AudioDownloader.downloadAudio(songMetaData.audio(), savePath);
-
-                String path = savePath.toString().replace("\\", "/");
-
-                songDao.updateAudioPath(songId, path);
-
-                streamingJobDao.updateStatus(songId, JobStatus.READY);
-
+                audioDownloadService.downloadSong(songId);
             } catch (Exception exception) {
-                streamingJobDao.updateStatus(songId, JobStatus.DOWNLOAD_FAILED);
 
-                log.error("SongId : {}, Download Failed : {}", songId, exception.getMessage());
+                songProgressingStatusRepository.updateStatusBySongId(songId, ProgressingStatus.DOWNLOAD_FAILED);
+
+                downloadLog.error("SongId : {}, Download Failed : {}", songId, exception.getMessage());
             }
         }
     }
@@ -60,44 +53,40 @@ public class AudioDownloadScheduler {
     @Scheduled(cron = "0 0 6 * * ?")
     public void retryDownloadAudio() {
 
-        List<Long> songIdList = streamingJobDao.findSongIdListByJobStatus(JobStatus.DOWNLOAD_FAILED, 300);
+        List<Long> songIdList = songProgressingStatusRepository.findSongIdListByProgressingStatus(ProgressingStatus.DOWNLOAD_FAILED, PageRequest.of(0, 200));
 
         for (Long songId : songIdList) {
-            if (!streamingJobDao.claimStatus(songId, JobStatus.DOWNLOAD_FAILED, JobStatus.DOWNLOADING)) continue;
+
+            int claimedDownload = songProgressingStatusRepository.claimStatusBySongId(songId, ProgressingStatus.DOWNLOAD_FAILED, ProgressingStatus.DOWNLOADING);
+
+            if (claimedDownload == 0) {
+                continue;
+            }
 
             try {
-                SongDto songMetaData = songDao.loadMetaData(songId);
-
-                String fileName = SongFileNamePolicy.mp3FileNamePolicy(songMetaData);
-
-                // todo 스토리지에 환경에 맞춰 변경 예정
-                Path savePath = Path.of("uploads/audios/" + fileName);
-
-                AudioDownloader.downloadAudio(songMetaData.audio(), savePath);
-
-                String path = savePath.toString().replace("\\", "/");
-
-                songDao.updateAudioPath(songId, path);
-
-                streamingJobDao.updateStatus(songId, JobStatus.READY);
+                audioDownloadService.downloadSong(songId);
 
             } catch (Exception exception) {
-                streamingJobDao.updateStatus(songId, JobStatus.DOWNLOAD_FAILED);
+                songProgressingStatusRepository.updateStatusBySongId(songId, ProgressingStatus.DOWNLOAD_FAILED);
 
-                log.error("SongId : {}, Download Failed : {}", songId, exception.getMessage());
+                downloadLog.error("SongId : {}, Download Failed : {}", songId, exception.getMessage());
             }
         }
     }
 
     // 매일 01시에 DOWNLOADING으로 상태가 멈춰 있으면 작업 가능 상태로 복구
     @Scheduled(cron = "0 0 1 * * ?")
+
 //        @Scheduled(fixedDelay = 50000)
     public void updateStatusDownloadingToNotReady() {
 
-        List<Long> songIdList = streamingJobDao.findSongIdListByJobStatus(JobStatus.DOWNLOADING, 100);
+        List<Long> songIdList = songProgressingStatusRepository.findSongIdListByProgressingStatus(ProgressingStatus.DOWNLOADING, PageRequest.of(0, 100));
 
         for (Long songId : songIdList) {
-            streamingJobDao.updateStatus(songId, JobStatus.NOT_READY);
+            SongProgressingStatus findSongProgressingStatus = songProgressingStatusRepository.findSongProgressingStatusBySong_SongId(songId)
+                    .orElseThrow(() -> new RuntimeException("존재하지 않는 음원 상태 데이터 입니다"));
+
+            findSongProgressingStatus.updateStatus(ProgressingStatus.NOT_READY);
         }
     }
 }

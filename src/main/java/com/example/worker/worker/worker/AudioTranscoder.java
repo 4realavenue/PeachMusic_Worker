@@ -17,9 +17,6 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class AudioTranscoder {
 
-    @Value("${worker.media.audio-path}")
-    private String audioPath;
-
     @Value("${worker.media.streaming-audio-path}")
     private String streamingAudioPath;
 
@@ -107,16 +104,12 @@ public class AudioTranscoder {
             throw new IllegalArgumentException("audioPath가 비어있습니다.");
         }
 
-        String path = audioPath.startsWith("/") ? audioPath.substring(1) : audioPath;
+        Path validPath = Path.of(audioPath);
 
-        // todo 스토리지에 환경에 맞춰 변경
-        if (!path.startsWith("uploads/audios/")) {
-            throw new IllegalArgumentException("지원하지 않는 audioPath 형식: " + audioPath);
+        if (validPath.isAbsolute()) {
+            return validPath;
         }
 
-        // todo 스토리지에 환경에 맞춰 변경
-        String fileName = path.substring(15);
-
-        return Path.of(this.audioPath, fileName);
+        throw new IllegalArgumentException("지원하지 않는 audioPath 형식: " + audioPath);
     }
 }

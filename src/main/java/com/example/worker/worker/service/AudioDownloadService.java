@@ -1,10 +1,10 @@
 package com.example.worker.worker.service;
 
 import com.example.worker.common.enums.ProgressingStatus;
+import com.example.worker.common.storage.R2StorageService;
 import com.example.worker.domain.song.entity.Song;
 import com.example.worker.domain.song.policy.SongFileNamePolicy;
 import com.example.worker.domain.song.repository.SongRepository;
-import com.example.worker.domain.songprogressingstatus.entity.SongProgressingStatus;
 import com.example.worker.domain.songprogressingstatus.repository.SongProgressingStatusRepository;
 import com.example.worker.worker.dto.request.WorkerTryWorkRequestDto;
 import com.example.worker.worker.worker.AudioDownloader;
@@ -14,6 +14,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -23,6 +25,7 @@ public class AudioDownloadService {
 
     private final SongRepository songRepository;
     private final SongProgressingStatusRepository songProgressingStatusRepository;
+    private final R2StorageService r2StorageService;
 
     private final static Logger downloadLog = LoggerFactory.getLogger("WORKER_DOWNLOAD");
 
@@ -58,20 +61,23 @@ public class AudioDownloadService {
         Song findSong = songRepository.findSongBySongId(songId)
                 .orElseThrow(() -> new RuntimeException("존재하지 않는 음원입니다"));
 
-        SongProgressingStatus findSongProgressingStatus = songProgressingStatusRepository.findBySong_SongId(songId)
-                .orElseThrow(() -> new RuntimeException("존재하지 않는 데이터입니다"));
-
         String fileName = SongFileNamePolicy.mp3FileNamePolicy(findSong);
 
-        Path savePath = Path.of("uploads/audios/" + fileName);
+        String tmpDir = System.getProperty("java.io.tmpdir");
+        Path localPath = Path.of(tmpDir, "peachmusic", "audio", fileName);
 
-        String path = savePath.toString().replace("\\", "/");
+        AudioDownloader.downloadAudio(findSong.getAudio(), localPath);
 
-        AudioDownloader.downloadAudio(findSong.getAudio(), savePath);
+        String key = "storage/audio/" + fileName;
 
-        findSong.updateAudio(path);
+        r2StorageService.upload(localPath, key, "audio/mpeg");
 
-        findSongProgressingStatus.updateStatus(ProgressingStatus.READY);
+        findSong.updateAudio(key);
 
+        songProgressingStatusRepository.updateStatusBySongId(songId, ProgressingStatus.READY);
+
+        try {
+            Files.deleteIfExists(localPath);
+        } catch (IOException ignored) {}
     }
 }

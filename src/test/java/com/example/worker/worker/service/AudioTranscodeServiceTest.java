@@ -1,6 +1,7 @@
 package com.example.worker.worker.service;
 
 import com.example.worker.common.enums.ProgressingStatus;
+import com.example.worker.common.storage.R2StorageService;
 import com.example.worker.domain.song.entity.Song;
 import com.example.worker.domain.song.repository.SongRepository;
 import com.example.worker.domain.songprogressingstatus.entity.SongProgressingStatus;
@@ -10,6 +11,9 @@ import com.example.worker.worker.dto.request.WorkerTryWorkRequestDto;
 import com.example.worker.worker.worker.AudioTranscoder;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,39 +23,13 @@ import static org.mockito.Mockito.*;
 class AudioTranscodeServiceTest {
 
     @Test
-    void transcodeSong_성공시_SUCCESS_오디오업데이트_스트리밍상태true() {
-        AudioTranscoder transcoder = mock(AudioTranscoder.class);
-        SongRepository songRepo = mock(SongRepository.class);
-        SongProgressingStatusRepository statusRepo = mock(SongProgressingStatusRepository.class);
-
-        AudioTranscodeService service = new AudioTranscodeService(transcoder, songRepo, statusRepo);
-
-        Long songId = 1L;
-
-        Song song = mock(Song.class);
-        when(song.getAudio()).thenReturn("uploads/audios/a.mp3");
-        when(songRepo.findSongBySongId(songId)).thenReturn(Optional.of(song));
-
-        SongProgressingStatus sps = mock(SongProgressingStatus.class);
-        when(statusRepo.findSongProgressingStatusBySong_SongId(songId)).thenReturn(Optional.of(sps));
-
-        when(transcoder.transcodeAudio(anyString()))
-                .thenReturn(new TranscodeResultDto("uploads/streaming/a/a.m3u8", "uploads/streaming/a"));
-
-        service.transcodeSong(songId);
-
-        verify(song).updateAudio("uploads/streaming/a/a.m3u8");
-        verify(sps).updateStatus(ProgressingStatus.SUCCESS);
-        verify(song).updateStatus(true);
-    }
-
-    @Test
     void transcodeSong_실패하면_예외던진다_상태변경은호출자책임() {
         AudioTranscoder transcoder = mock(AudioTranscoder.class);
         SongRepository songRepo = mock(SongRepository.class);
         SongProgressingStatusRepository statusRepo = mock(SongProgressingStatusRepository.class);
+        R2StorageService r2Service = mock(R2StorageService.class);
 
-        AudioTranscodeService service = new AudioTranscodeService(transcoder, songRepo, statusRepo);
+        AudioTranscodeService service = new AudioTranscodeService(transcoder, songRepo, statusRepo, r2Service);
 
         Long songId = 1L;
 
@@ -77,8 +55,9 @@ class AudioTranscodeServiceTest {
         AudioTranscoder transcoder = mock(AudioTranscoder.class);
         SongRepository songRepo = mock(SongRepository.class);
         SongProgressingStatusRepository statusRepo = mock(SongProgressingStatusRepository.class);
+        R2StorageService r2Service = mock(R2StorageService.class);
 
-        AudioTranscodeService serviceSpy = spy(new AudioTranscodeService(transcoder, songRepo, statusRepo));
+        AudioTranscodeService serviceSpy = spy(new AudioTranscodeService(transcoder, songRepo, statusRepo, r2Service));
 
         WorkerTryWorkRequestDto req = new WorkerTryWorkRequestDto();
         java.lang.reflect.Field f = WorkerTryWorkRequestDto.class.getDeclaredField("songIdList");

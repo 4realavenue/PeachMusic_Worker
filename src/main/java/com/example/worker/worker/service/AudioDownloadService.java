@@ -70,7 +70,7 @@ public class AudioDownloadService {
 
         String key = "storage/audio/" + fileName;
 
-        r2StorageService.upload(localPath, key, "audio/mpeg");
+        r2StorageService.privateUpload(localPath, key, "audio/mpeg");
 
         findSong.updateAudio(key);
 

@@ -89,7 +89,7 @@ public class AudioTranscodeService {
 
             String contentType = resolveContentType(fileName);
 
-            r2StorageService.upload(file.toPath(), prefix + "/" + fileName, contentType);
+            r2StorageService.publicUpload(file.toPath(), prefix + "/" + fileName, contentType);
         });
 
         // DB 최신화

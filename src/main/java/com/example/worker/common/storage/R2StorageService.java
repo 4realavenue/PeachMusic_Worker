@@ -19,6 +19,9 @@ public class R2StorageService {
     @Value("${r2.bucket.media}")
     private String mediaBucket;
 
+    @Value("${r2.bucket.assets}")
+    private String assetsBucket;
+
     public void download(String key, Path localPath) {
         try {
             Files.createDirectories(localPath.getParent());
@@ -35,7 +38,7 @@ public class R2StorageService {
         }
     }
 
-    public void upload(Path file, String key, String contentType) {
+    public void privateUpload(Path file, String key, String contentType) {
         try {
             s3Client.putObject(
                     PutObjectRequest.builder()
@@ -46,7 +49,22 @@ public class R2StorageService {
                     file
             );
         } catch (Exception e) {
-            throw new RuntimeException("R2 upload 실패", e);
+            throw new RuntimeException("R2 private-upload 실패", e);
+        }
+    }
+
+    public void publicUpload(Path file, String key, String contentType) {
+        try {
+            s3Client.putObject(
+                    PutObjectRequest.builder()
+                            .bucket(assetsBucket)
+                            .key(key)
+                            .contentType(contentType)
+                            .build(),
+                    file
+            );
+        } catch (Exception e) {
+            throw new RuntimeException("R2 public-upload 실패", e);
         }
     }
 }

@@ -48,7 +48,7 @@ public class LogHistoryScheduler {
                 return;
             }
 
-            r2StorageService.upload(logPath, key, "text/plain");
+            r2StorageService.privateUpload(logPath, key, "text/plain");
 
             Files.deleteIfExists(logPath);
 

@@ -35,3 +35,4 @@ r2:
   secret-access-key: ${R2_SECRET_ACCESS_KEY}
   bucket:
     media: ${R2_BUCKET_MEDIA}
+    assets: ${R2_BUCKET_ASSETS}

@@ -4,8 +4,6 @@ spring:
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
-
-
   jpa:
     show-sql: true
     hibernate:
@@ -13,11 +11,28 @@ spring:
     properties:
       hibernate:
         format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
     defer-datasource-initialization: true
 
 worker:
   media:
-    audio-path: ${AUDIO_PATH}
     streaming-audio-path: ${STREAMING_AUDIO_PATH}
+  bootstrap:
+    enabled: false
 server:
-  port: ${PORT}
+  port: 8081
+
+logging:
+  level:
+    org.hibernate.SQL: off
+    org.hibernate.orm.jdbc.bind: off
+  file:
+    path: ${LOG_PATH}
+
+r2:
+  account-id: ${R2_ACCOUNT_ID}
+  access-key-id: ${R2_ACCESS_KEY_ID}
+  secret-access-key: ${R2_SECRET_ACCESS_KEY}
+  bucket:
+    media: ${R2_BUCKET_MEDIA}
+    assets: ${R2_BUCKET_ASSETS}
